@@ -1,0 +1,283 @@
+
+
+<div class="dv1" style="border:1px solid #000000;">
+    <html>
+            <title>Simple Paint App</title>
+    <head>
+      <link rel="stylesheet" type="text/css" href="style.css"> 
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <div style="border:1px solid #000000;"> 
+            <div class="topnav">
+            <div class="dv" id="heading">
+                <h5>Simple Paint App</h5>
+                    <a class="active" href="#home"><span>&#8678;</span></a>
+                    <a href="#about"><span>&#8680;</span> </a>
+              <a href="#abouts"><span>&#10540;</span></a>
+                    <a href="#contact"><span>&#8679;</span></a>
+          <a >	<input type="text" placeholder="Search.." ></a>
+          <a href="#"><button style="font-size:24px"><i class="fa fa-search"></i></button></a>
+            </div>
+          </div>
+        </div>
+    
+    </head>
+    <form >
+    <body>
+        <div id="heading">
+            <h2>Simple Paint App</h2>
+          </div>
+          <div >
+              <a > <button type="button" onclick="clearCanvas1()">Clear</button></a><br><br><br><br><br>
+                <a > <button type="button" id="drag" onclick="dragTriangles()">
+                Disable drag
+              </button></a><br><br><br><br><br>
+              <br />
+            </div>
+    <canvas id="triangle" width="500" height="250" style="border:1px solid #000000;"></canvas>
+    <script>
+  
+    function clearCanvas1()
+    {
+        var canvas = document.getElementById('triangle'),
+            ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+		
+    }
+    
+    //--------------------------------//
+    var canvas = document.getElementById("triangle");
+			var ctx = canvas.getContext("2d");
+
+			canvas.addEventListener("mousedown", mouseDown);
+			canvas.addEventListener("mouseup", mouseUp);
+			canvas.addEventListener("mousemove", mouseMove);
+			canvas.addEventListener("contextmenu", rightClick);
+			canvas.addEventListener("dblclick", doubleClick);
+			canvas.onselectstart = () => false;
+
+			var triangles = [];
+
+			var colors = [
+				"gray",
+				"green",
+				"blue",
+				"red",
+				"orange",
+				"purple",
+				"yellow",
+				"pink",
+			];
+
+			var index = (mouseX = mouseY = mouseMoveX = mouseMoveY = 0);
+			var flag = (mouseChange = drag = false);
+			var shouldDraggable = true;
+
+			// switch for drag
+			var dragTriangles = () => {
+				shouldDraggable = !shouldDraggable;
+				var txt = `${shouldDraggable ? "Disable" : "Enable"} drag`;
+				document.getElementById("drag").innerText = txt;
+				
+			};
+
+			// clear the canvas area
+			var clearCanvasArea = () =>
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			var clearCanvas = () => {
+				triangles = [];
+				flag = false;
+				drag = false;
+				isDoubleClickDone = false;
+				clearCanvasArea();
+			};
+
+			// events
+			function getMousePosition(canvas, e) {
+				var rect = canvas.getBoundingClientRect();
+
+				var scaleX = canvas.width / rect.width;
+				var scaleY = canvas.height / rect.height;
+
+				return {
+					x: (e.clientX - rect.left) * scaleX,
+					y: (e.clientY - rect.top) * scaleY,
+				};
+			}
+
+			function mouseDown(e) {
+				var mousePosition = getMousePosition(canvas, e);
+				mouseX = mousePosition.x;
+				mouseY = mousePosition.y;
+
+				mouseChange = true;
+				if (triangles == null) return;
+
+				triangles.forEach((triangle, i) => {
+					initTrianglePath(triangle);
+
+					if (ctx.isPointInPath(mouseX, mouseY)) {
+						index = i;
+						if (shouldDraggable) drag = true;
+					}
+				});
+			}
+
+			function mouseMove(e) {
+				if (!mouseChange) return;
+
+				var mousePosition = getMousePosition(canvas, e);
+				mouseMoveX = mousePosition.x;
+				mouseMoveY = mousePosition.y;
+
+				if (drag) {
+					var newX = mouseMoveX - mouseX;
+					var newY = mouseMoveY - mouseY;
+
+					mouseX = mouseMoveX;
+					mouseY = mouseMoveY;
+
+					triangles[index].X += newX;
+					triangles[index].Y += newY;
+
+					clearCanvasArea();
+					drawMovableTriangle();
+				} else {
+					clearCanvasArea();
+					drawTriangle();
+				}
+			}
+
+			function mouseUp() {
+				mouseChange = false;
+				drag = false;
+
+				if (!flag) return;
+
+				var randomIndex = Math.floor(Math.random() * 8);
+				ctx.fillStyle = colors[randomIndex];
+				ctx.fill();
+
+				triangles.push({
+					X: 0,
+					Y: 0,
+					x0: mouseX,
+					y0: mouseY,
+					x1: mouseMoveX,
+					y1: mouseMoveY,
+					x2: mouseX + (mouseX - mouseMoveX),
+					y2: mouseMoveY,
+					colorIndex: randomIndex,
+					
+				});
+
+				flag = false;
+				
+			}
+
+			// trace & draw triangle path
+			function drawTriangle() {
+				if (triangles == null) return;
+
+				triangles.forEach((triangle) => redraw(triangle));
+
+				ctx.beginPath();
+				ctx.moveTo(mouseX, mouseY);
+				ctx.lineTo(mouseMoveX, mouseMoveY);
+				ctx.lineTo(mouseX + (mouseX - mouseMoveX), mouseMoveY);
+				ctx.closePath();
+				ctx.stroke();
+				flag = true;
+				
+			}
+
+			function redraw(triangle) {
+
+				ctx.beginPath();
+
+				ctx.moveTo(triangle.x0 + triangle.X, triangle.y0 + triangle.Y);
+				ctx.lineTo(triangle.x1 + triangle.X, triangle.y1 + triangle.Y);
+				ctx.lineTo(triangle.x2 + triangle.X, triangle.y2 + triangle.Y);
+
+				ctx.closePath();
+				ctx.fillStyle = colors[triangle.colorIndex];
+				ctx.fill();
+				
+			}
+
+			function initTrianglePath(triangle) {
+				ctx.beginPath();
+
+				ctx.moveTo(triangle.x0 + triangle.X, triangle.y0 + triangle.Y);
+				ctx.lineTo(triangle.x1 + triangle.X, triangle.y1 + triangle.Y);
+				ctx.lineTo(triangle.x2 + triangle.X, triangle.y2 + triangle.Y);
+
+				ctx.closePath();
+			}
+
+			// delete
+			function doubleClick(e) {
+				var doubleClickPosition = getMousePosition(canvas, e);
+
+				if (triangles == null) return;
+
+				triangles.forEach((triangle, i) => {
+					initTrianglePath(triangle);
+
+					if (ctx.isPointInPath(doubleClickPosition.x, doubleClickPosition.y)) {
+						triangles.splice(i, 1);
+						clearCanvasArea();
+						drawMovableTriangle();
+					}
+				});
+			}
+
+			// colour change
+			function  rightClick(e) {
+				var doubleClickPosition = getMousePosition(canvas, e);
+
+				if (triangles == null) return;
+
+				triangles.forEach((triangle, i) => {
+					initTrianglePath(triangle);
+
+					if (ctx.isPointInPath(doubleClickPosition.x, doubleClickPosition.y)) {
+						triangle.colorIndex = Math.floor(Math.random() * 8);
+						drawMovableTriangle(i);
+					}
+				});
+			}
+
+			// draggable
+			function drawMovableTriangle(indexValue) {
+				triangles.forEach((triangle, i) => {
+					ctx.beginPath();
+
+					ctx.moveTo(triangle.x0 + triangle.X, triangle.y0 + triangle.Y);
+					ctx.lineTo(triangle.x1 + triangle.X, triangle.y1 + triangle.Y);
+					ctx.lineTo(triangle.x2 + triangle.X, triangle.y2 + triangle.Y);
+
+					ctx.closePath();
+					ctx.fillStyle = colors[triangle.colorIndex];
+					indexValue !== undefined && indexValue === i
+						? ctx.fill()
+						: ctx.stroke();
+						
+				});
+			}
+    </script>
+    <!-- <a ><button onmouseover="clearcanvas1()">clear</button></a></p><br><br><br><br><br> -->
+    <!-- <div id="left">
+        <a > <button type="button" onclick="clearCanvas1()">Clear</button></a><br><br><br><br><br>
+          <a > <button type="button" id="drag" onclick="dragTriangles()">
+          Disable drag
+        </button></a><br><br><br><br><br>
+        <br />
+      </div> -->
+    <footer>
+      </footer>
+    </body>
+    </form>
+    </html>
+    </div>
+    
